@@ -1,0 +1,24 @@
+# Checklist obrigatório antes de produção
+
+- [ ] Desabilitar cadastro público de escritórios ou exigir aprovação/convite.
+- [ ] Criar processo de provisionamento e suspensão de tenants.
+- [ ] Implementar MFA para administradores e equipe, conforme risco.
+- [ ] Implementar recuperação de senha por token de uso único e e-mail transacional.
+- [ ] Implementar seleção de escritório para usuários com múltiplos vínculos.
+- [ ] Revisar autorização por função e permissão em todas as rotas.
+- [ ] Criar testes automatizados que tentem acessar dados de outro tenant.
+- [ ] Avaliar Row-Level Security no PostgreSQL como defesa em profundidade.
+- [ ] Configurar HTTPS, domínio, CORS estrito, cookies Secure e segredos fortes.
+- [ ] Configurar S3 privado, criptografia, bloqueio de acesso público e ciclo de vida.
+- [ ] Adicionar varredura antivírus/quarentena e validação de conteúdo de arquivos.
+- [ ] Definir limites por plano, tenant, usuário, volume e taxa de upload.
+- [ ] Implementar backup do banco e dos objetos, com teste real de restauração.
+- [ ] Implementar monitoramento, alertas, logs sem dados pessoais e resposta a incidentes.
+- [ ] Revisar LGPD, contratos, aviso de privacidade, retenção e descarte.
+- [ ] Integrar envio de convites e notificações por e-mail sem expor tokens.
+- [ ] Revisar publicação de documentos no portal: somente equipe autorizada pode publicar.
+- [ ] Revisar isolamento e autorização dos endpoints do portal.
+- [ ] Criar testes de integração, testes de interface e testes de segurança.
+- [ ] Revisar política de atualização de dependências e vulnerabilidades.
+- [ ] Formalizar contratos de licença, suporte, propriedade intelectual e tratamento de dados.
+- [ ] Obter parecer jurídico sobre a estrutura comercial envolvendo os profissionais parceiros.

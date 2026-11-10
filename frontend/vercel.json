@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://SUBSTITUA-PELA-URL-DO-BACKEND.vercel.app/api/:path*"
+    },
+    { "source": "/:path*", "destination": "/index.html" }
+  ]
+}

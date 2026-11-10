@@ -1,0 +1,706 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+}
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+enum ClientType {
+  PERSON
+  LEGAL_ENTITY
+}
+enum PropertyType {
+  URBAN
+  RURAL
+}
+enum CaseStatus {
+  NEW
+  IN_PROGRESS
+  WAITING_CLIENT
+  WAITING_EXTERNAL
+  WAITING_INTERNAL
+  SUSPENDED
+  COMPLETED
+  CANCELED
+}
+enum StageStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+}
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELED
+}
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+enum DocumentRequestStatus {
+  REQUESTED
+  RECEIVED
+  IN_REVIEW
+  ACCEPTED
+  REJECTED
+}
+enum FinancialType {
+  RECEIVABLE
+  EXPENSE
+}
+enum FinancialStatus {
+  OPEN
+  PAID
+  OVERDUE
+  CANCELED
+}
+enum PortalStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+model Tenant {
+  id             String       @id @default(cuid())
+  name           String
+  legalName      String?
+  document       String?
+  email          String?
+  phone          String?
+  status         TenantStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  memberships    Membership[]
+  clients        Client[]
+  properties     Property[]
+  templates      ServiceTemplate[]
+  cases          Case[]
+  tasks          Task[]
+  financialItems FinancialEntry[]
+  auditLogs      AuditLog[]
+  portalAccounts PortalAccount[]
+  portalInvites  PortalInvite[]
+  documents      Document[]
+  documentRequests DocumentRequest[]
+  events         CalendarEvent[]
+  notifications  Notification[]
+  documentTemplates DocumentTemplate[]
+  teamInvites    TeamInvite[]
+  subscription   Subscription?
+  automationRules AutomationRule[]
+  automationRuns  AutomationRun[]
+  portalRequests  PortalRequest[]
+
+  @@index([status])
+}
+
+model User {
+  id                 String       @id @default(cuid())
+  name               String
+  email              String       @unique
+  passwordHash       String
+  status             UserStatus   @default(ACTIVE)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  memberships        Membership[]
+  createdCases       Case[]       @relation("CaseCreatedBy")
+  assignedCases      Case[]       @relation("CaseAssignedTo")
+  createdTasks       Task[]       @relation("TaskCreatedBy")
+  assignedTasks      Task[]       @relation("TaskAssignedTo")
+  uploadedDocuments  Document[]   @relation("DocumentUploadedBy")
+  auditLogs          AuditLog[]
+  createdVersions    ServiceTemplateVersion[] @relation("TemplateVersionCreatedBy")
+  createdEvents      CalendarEvent[] @relation("EventCreatedBy")
+  assignedEvents     CalendarEvent[] @relation("EventAssignedTo")
+  notifications      Notification[]
+  createdDocTemplates DocumentTemplate[] @relation("DocumentTemplateCreatedBy")
+  passwordResets PasswordResetToken[]
+
+  @@index([email])
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      String   @default("ADMIN")
+  permissions Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@index([tenantId, role])
+}
+
+model Client {
+  id             String      @id @default(cuid())
+  tenantId       String
+  type           ClientType  @default(PERSON)
+  name           String
+  document       String?
+  email          String?
+  phone          String?
+  birthOrCompanyDate DateTime?
+  postalCode     String?
+  street         String?
+  number         String?
+  complement     String?
+  district       String?
+  city           String?
+  state          String?
+  notes          String?
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  properties     PropertyParty[]
+  cases          Case[]
+  portalAccounts PortalAccount[]
+  portalInvites  PortalInvite[]
+  documents      Document[]
+  financialItems FinancialEntry[]
+  calendarEvents CalendarEvent[]
+  portalRequests PortalRequest[]
+
+  @@unique([tenantId, document])
+  @@index([tenantId, name])
+  @@index([tenantId, email])
+}
+
+model Property {
+  id             String       @id @default(cuid())
+  tenantId       String
+  type           PropertyType
+  title          String
+  description    String?
+  postalCode     String?
+  street         String?
+  number         String?
+  complement     String?
+  district       String?
+  city           String
+  state          String
+  areaValue      Decimal?     @db.Decimal(16, 4)
+  areaUnit       String?      @default("m²")
+  registrationNumber String?
+  registryOffice String?
+  municipalRegistration String?
+  ruralRegistration String?
+  latitude       Decimal?     @db.Decimal(10, 7)
+  longitude      Decimal?     @db.Decimal(10, 7)
+  notes          String?
+  ruralDetails   Json?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parties        PropertyParty[]
+  cases          Case[]
+
+  @@index([tenantId, title])
+  @@index([tenantId, city, state])
+}
+
+model PropertyParty {
+  id         String   @id @default(cuid())
+  tenantId   String
+  propertyId String
+  clientId   String
+  role       String
+  notes      String?
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, clientId, role])
+  @@index([tenantId])
+}
+
+model ServiceTemplate {
+  id             String                   @id @default(cuid())
+  tenantId       String
+  name           String
+  description    String?
+  category       String?
+  isActive       Boolean                  @default(true)
+  currentVersion Int                      @default(1)
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  tenant         Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  versions       ServiceTemplateVersion[]
+  cases          Case[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, isActive])
+}
+
+model ServiceTemplateVersion {
+  id             String   @id @default(cuid())
+  tenantId       String
+  templateId     String
+  version        Int
+  createdById    String?
+  changeNote     String?
+  createdAt      DateTime @default(now())
+  template       ServiceTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdBy      User?    @relation("TemplateVersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  stages         TemplateStage[]
+  requirements   TemplateDocumentRequirement[]
+  cases          Case[]
+
+  @@unique([templateId, version])
+  @@index([tenantId, templateId])
+}
+
+model TemplateStage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  versionId   String
+  name        String
+  description String?
+  order       Int
+  visibleToClient Boolean @default(true)
+  version     ServiceTemplateVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, order])
+  @@index([tenantId, versionId])
+}
+
+model TemplateDocumentRequirement {
+  id                String   @id @default(cuid())
+  tenantId          String
+  versionId         String
+  name              String
+  instructions      String?
+  required          Boolean  @default(true)
+  allowClientUpload Boolean  @default(true)
+  acceptedMimeTypes String[] @default(["application/pdf", "image/jpeg", "image/png"])
+  version           ServiceTemplateVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, versionId])
+}
+
+model Case {
+  id               String     @id @default(cuid())
+  tenantId         String
+  clientId         String
+  propertyId       String
+  templateId       String
+  templateVersionId String
+  title            String
+  description      String?
+  status           CaseStatus @default(NEW)
+  priority         Priority   @default(NORMAL)
+  openedAt         DateTime   @default(now())
+  dueAt            DateTime?
+  closedAt         DateTime?
+  createdById      String
+  assignedToId     String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  tenant           Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client           Client     @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  property         Property   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  template         ServiceTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  templateVersion  ServiceTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  createdBy        User       @relation("CaseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  assignedTo       User?      @relation("CaseAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  stages           CaseStage[]
+  documentRequests DocumentRequest[]
+  documents        Document[]
+  tasks            Task[]
+  financialItems   FinancialEntry[]
+  events           CalendarEvent[]
+  portalRequests   PortalRequest[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, clientId])
+  @@index([tenantId, propertyId])
+  @@index([tenantId, assignedToId])
+}
+
+model CaseStage {
+  id             String      @id @default(cuid())
+  tenantId       String
+  caseId         String
+  name           String
+  description    String?
+  order          Int
+  status         StageStatus @default(PENDING)
+  visibleToClient Boolean    @default(true)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  notesInternal  String?
+  notesPublic    String?
+  case           Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, order])
+  @@index([tenantId, caseId])
+}
+
+model DocumentRequest {
+  id                String @id @default(cuid())
+  tenantId          String
+  caseId            String
+  name              String
+  instructions      String?
+  required          Boolean @default(true)
+  allowClientUpload Boolean @default(true)
+  status            DocumentRequestStatus @default(REQUESTED)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  tenant            Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case              Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  documents         Document[]
+
+  @@index([tenantId, caseId, status])
+}
+
+model Document {
+  id             String @id @default(cuid())
+  tenantId       String
+  caseId         String
+  clientId       String?
+  requestId      String?
+  title          String
+  category       String?
+  visibility     String @default("INTERNAL")
+  expiresAt      DateTime?
+  expiryAlertSentAt DateTime?
+  lastExpiryAlertDay Int?
+  uploadedById   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  tenant         Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case           Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  client         Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  request        DocumentRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  uploadedBy     User? @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  versions       DocumentVersion[]
+
+  @@index([tenantId, caseId])
+}
+
+model DocumentVersion {
+  id           String   @id @default(cuid())
+  tenantId     String
+  documentId   String
+  storageKey   String   @unique
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  checksum     String?
+  uploaderType String   @default("USER")
+  uploaderId   String?
+  createdAt    DateTime @default(now())
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, documentId])
+}
+
+model Task {
+  id           String     @id @default(cuid())
+  tenantId     String
+  caseId       String?
+  title        String
+  description  String?
+  status       TaskStatus @default(TODO)
+  priority     Priority   @default(NORMAL)
+  dueAt        DateTime?
+  assignedToId String?
+  createdById  String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  reminderSentAt DateTime?
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case         Case?      @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  assignedTo   User?      @relation("TaskAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy    User       @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status, dueAt])
+}
+
+model FinancialEntry {
+  id          String         @id @default(cuid())
+  tenantId    String
+  caseId      String?
+  clientId    String?
+  type        FinancialType
+  status      FinancialStatus @default(OPEN)
+  description String
+  amount      Decimal        @db.Decimal(14, 2)
+  category    String?
+  notes       String?
+  paymentMethod String?
+  installmentNumber Int?
+  installmentsTotal Int?
+  dueAt       DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case        Case?          @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  client      Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, type, status])
+  @@index([tenantId, dueAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId])
+}
+
+model PortalAccount {
+  id           String       @id @default(cuid())
+  tenantId     String
+  clientId     String
+  email        String
+  passwordHash String
+  status       PortalStatus @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, clientId])
+  @@index([email])
+}
+
+model PortalInvite {
+  id        String   @id @default(cuid())
+  tenantId  String
+  clientId  String
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  acceptedAt DateTime?
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, clientId])
+}
+
+
+model CalendarEvent {
+  id           String   @id @default(cuid())
+  tenantId     String
+  title        String
+  description  String?
+  type         String   @default("OTHER")
+  startAt      DateTime
+  endAt        DateTime?
+  allDay       Boolean  @default(false)
+  location     String?
+  status       String   @default("SCHEDULED")
+  caseId       String?
+  clientId     String?
+  assignedToId String?
+  createdById  String
+  reminderSentAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  case         Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  createdBy    User     @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  assignedTo   User?    @relation("EventAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  @@index([tenantId, startAt])
+  @@index([tenantId, assignedToId, startAt])
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  title      String
+  message    String
+  link       String?
+  type       String   @default("INFO")
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([tenantId, userId, readAt, createdAt])
+}
+
+model DocumentTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  createdById String?
+  name        String
+  category    String?
+  description String?
+  body        String   @db.Text
+  variables   Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy   User?    @relation("DocumentTemplateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  @@index([tenantId, isActive, name])
+}
+
+model TeamInvite {
+  id         String   @id @default(cuid())
+  tenantId   String
+  email      String
+  name       String?
+  role       String   @default("ASSISTANT")
+  permissions Json?
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@index([tenantId, email])
+}
+
+model Plan {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  monthlyPrice Decimal @db.Decimal(10, 2)
+  maxUsers    Int      @default(3)
+  maxCases    Int      @default(100)
+  features    Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id             String   @id @default(cuid())
+  tenantId       String   @unique
+  planId         String
+  status         String   @default("TRIAL")
+  startedAt      DateTime @default(now())
+  trialEndsAt    DateTime?
+  currentPeriodEnd DateTime?
+  canceledAt     DateTime?
+  externalReference String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan           Plan     @relation(fields: [planId], references: [id], onDelete: Restrict)
+  @@index([status, currentPeriodEnd])
+}
+
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+
+
+model PortalRequest {
+  id        String   @id @default(cuid())
+  tenantId  String
+  clientId  String
+  caseId    String?
+  subject   String
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  case      Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  messages  PortalRequestMessage[]
+  @@index([tenantId, status, updatedAt])
+  @@index([tenantId, clientId, createdAt])
+}
+
+model PortalRequestMessage {
+  id         String   @id @default(cuid())
+  requestId  String
+  senderType String
+  senderId   String?
+  message    String   @db.Text
+  createdAt  DateTime @default(now())
+  request    PortalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  @@index([requestId, createdAt])
+}
+
+model AutomationRule {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  trigger     String
+  action      String
+  config      Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  runs        AutomationRun[]
+  @@index([tenantId, trigger, isActive])
+}
+
+model AutomationRun {
+  id          String   @id @default(cuid())
+  tenantId    String
+  ruleId      String
+  trigger     String
+  status      String
+  context     Json?
+  result      Json?
+  error       String?
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  createdAt   DateTime @default(now())
+  rule        AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@index([tenantId, startedAt])
+  @@index([ruleId, status])
+}
+
+model IntegrationCredential {
+  provider             String   @id
+  encryptedRefreshToken String  @db.Text
+  accountEmail         String
+  connectedByUserId    String?
+  connectedAt          DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
