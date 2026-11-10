@@ -880,16 +880,6 @@ router.get(
   })
 );
 
-
-router.get('/documents/:id/download', asyncHandler(async (req, res) => {
-  requireS3();
-  const item = await prisma.document.findFirst({ where: { id: idParam.parse(req.params.id), tenantId: tenantId(req) }, include: { versions: { orderBy: { createdAt: 'desc' }, take: 1 } } });
-  const version = item?.versions[0];
-  if (!item || !version) throw new AppError(404, 'Documento não encontrado.');
-  const url = await createDownloadUrl(version.storageKey);
-  res.json({ url, expiresInSeconds: 120 });
-}));
-
 router.patch('/document-requests/:id', asyncHandler(async (req, res) => {
   const id = idParam.parse(req.params.id);
   const input = z.object({ status: z.enum(['REQUESTED', 'RECEIVED', 'IN_REVIEW', 'ACCEPTED', 'REJECTED']) }).parse(req.body);
@@ -1129,6 +1119,7 @@ portalRouter.post(
 );
 
 // Protected download — customer portal.
+
 portalRouter.get(
   '/documents/:id/download',
   requirePortalAccount,

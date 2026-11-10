@@ -7,3 +7,6 @@ coverage/
 .DS_Store
 *.log
 backend/storage/
+.vercel/
+dist/
+blob-temp.env
