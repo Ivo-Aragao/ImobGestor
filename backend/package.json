@@ -1,8 +1,12 @@
+
 {
   "name": "@imobgestor/backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "nodemon src/dev-server.js",
     "start": "node src/dev-server.js",
@@ -10,13 +14,11 @@
     "db:generate": "prisma generate --schema=./prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "db:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
-    "db:studio": "prisma studio --schema=./prisma/schema.prisma",
     "db:validate": "prisma validate --schema=./prisma/schema.prisma",
+    "db:studio": "prisma studio --schema=./prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.750.0",
-    "@aws-sdk/s3-request-presigner": "^3.750.0",
     "@prisma/client": "^6.4.1",
     "@vercel/blob": "^2.9.0",
     "bcryptjs": "^2.4.3",
@@ -38,8 +40,5 @@
   },
   "prisma": {
     "schema": "./prisma/schema.prisma"
-  },
-  "engines": {
-    "node": ">=20"
   }
 }
