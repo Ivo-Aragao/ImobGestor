@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://SUBSTITUA-PELA-URL-DO-BACKEND.vercel.app/api/:path*"
+      "destination": "https://imob-gestor.vercel.app/api/:path*"
     },
     { "source": "/:path*", "destination": "/index.html" }
   ]
