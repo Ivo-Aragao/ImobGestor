@@ -15,7 +15,7 @@ function fortalezaWindow(key) {
 router.get('/daily', async (req, res, next) => {
   try {
     const secret = process.env.CRON_SECRET;
-    const supplied = req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.query.secret;
+    const supplied = req.headers.authorization?.replace(/^Bearer\s+/i, '');
     if (!secret || supplied !== secret) return res.status(401).json({ error: 'Não autorizado.' });
     const tomorrow = new Date(`${localDateKey(new Date(Date.now() + 86400000))}T00:00:00-03:00`);
     const { start, end } = fortalezaWindow(localDateKey(tomorrow));
