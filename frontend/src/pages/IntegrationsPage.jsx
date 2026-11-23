@@ -689,12 +689,20 @@ export default function IntegrationsPage() {
         </p>
 
         <div className="notice-box">
-          Configure <code>CRON_SECRET</code> nas variáveis de ambiente
-          do backend. A rota protegida é{' '}
-          <code>/api/v1/cron/daily</code>. Confira se a programação
-          está definida no <code>vercel.json</code> e teste a rotina
-          antes de depender dos lembretes em produção.
-        </div>
+  <strong>Agendamento ativo:</strong> A rotina está configurada
+  para execução diária pela Vercel, às 08:00 (horário de Fortaleza).
+
+  Ela verifica vencimentos de documentos, tarefas e compromissos,
+  atualiza cobranças vencidas e cria notificações internas.
+  Quando houver avisos aplicáveis, os e-mails são enviados
+  pelo Gmail conectado.
+
+  <br />
+  <small>
+    O histórico das execuções pode ser acompanhado nos logs
+    do backend.
+  </small>
+</div>
       </section>
     </>
   );

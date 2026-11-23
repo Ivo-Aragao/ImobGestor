@@ -10,3 +10,5 @@ backend/storage/
 .vercel/
 dist/
 blob-temp.env
+.vercel
+.env*
