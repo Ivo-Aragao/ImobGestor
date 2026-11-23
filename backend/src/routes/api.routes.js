@@ -26,8 +26,8 @@ import { runAutomationTrigger } from '../lib/automation-engine.js';
 
 
 
-const DOCUMENT_MAX_BYTES =
-  (Number(process.env.MAX_FILE_SIZE_MB) || 25) * 1024 * 1024;
+const DOCUMENT_MAX_MB = 4.5;
+const DOCUMENT_MAX_BYTES = DOCUMENT_MAX_MB * 1024 * 1024;
 
 const documentUpload = multer({
   storage: multer.memoryStorage(),
@@ -48,7 +48,7 @@ function receiveDocumentFile(req, res, next) {
       return next(
         new AppError(
           400,
-          `O arquivo excede o limite de ${Math.round(DOCUMENT_MAX_BYTES / 1024 / 1024)} MB.`
+          'O arquivo excede o limite de 4,5 MB por arquivo.'
         )
       );
     }

@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { google } from 'googleapis';
 import { rateLimit } from 'express-rate-limit';
-
+import { storageIsConfigured } from '../lib/storage.js';
 import { prisma } from '../lib/prisma.js';
 import { AppError, asyncHandler } from '../lib/errors.js';
 import { requireUser } from '../middlewares/auth.js';
@@ -182,7 +182,7 @@ router.get(
       emailConnectedAt: credential?.connectedAt || null,
 
       // O Vercel Blob será ativado em uma próxima etapa.
-      storage: false,
+      storage: storageIsConfigured(),
 
       electronicSignature: Boolean(
         process.env.SIGNATURE_PROVIDER_URL &&

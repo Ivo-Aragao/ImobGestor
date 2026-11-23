@@ -18,6 +18,10 @@ import {
   Send,
 } from 'lucide-react';
 
+const MAX_DOCUMENT_SIZE_MB = 4.5;
+const MAX_DOCUMENT_SIZE_BYTES =
+  MAX_DOCUMENT_SIZE_MB * 1024 * 1024;
+
 const statusLabels = {
   NEW: 'Novo',
   IN_PROGRESS: 'Em andamento',
@@ -57,6 +61,7 @@ function downloadBlobFile(blob, fileName) {
 
   link.href = objectUrl;
   link.download = fileName || 'documento';
+
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -180,6 +185,12 @@ export default function PortalPage() {
 
   async function uploadFile(file, item, request) {
     if (!file) return;
+
+    // Validação adicional antes de enviar ao backend.
+    if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+      setError('O arquivo excede o limite de 4,5 MB por arquivo.');
+      return;
+    }
 
     setError('');
     setSuccess('');
@@ -409,28 +420,48 @@ export default function PortalPage() {
                           {['REQUESTED', 'REJECTED'].includes(
                             request.status
                           ) && (
-                            <label className="upload-button">
-                              <FileUp size={16} />
-                              Enviar arquivo
+                            <>
+                              <p className="muted">
+                                Limite de 4,5 MB por arquivo.
+                                Formatos aceitos: PDF, JPG e PNG.
+                              </p>
 
-                              <input
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                                disabled={busy}
-                                onChange={(e) => {
-                                  const selectedFile =
-                                    e.target.files?.[0];
+                              <label className="upload-button">
+                                <FileUp size={16} />
+                                Enviar arquivo
 
-                                  uploadFile(
-                                    selectedFile,
-                                    item,
-                                    request
-                                  );
+                                <input
+                                  type="file"
+                                  accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                  disabled={busy}
+                                  onChange={(e) => {
+                                    const input = e.currentTarget;
+                                    const selectedFile =
+                                      input.files?.[0] || null;
 
-                                  e.target.value = '';
-                                }}
-                              />
-                            </label>
+                                    input.value = '';
+
+                                    if (!selectedFile) return;
+
+                                    if (
+                                      selectedFile.size >
+                                      MAX_DOCUMENT_SIZE_BYTES
+                                    ) {
+                                      setError(
+                                        'O arquivo excede o limite de 4,5 MB por arquivo.'
+                                      );
+                                      return;
+                                    }
+
+                                    uploadFile(
+                                      selectedFile,
+                                      item,
+                                      request
+                                    );
+                                  }}
+                                />
+                              </label>
+                            </>
                           )}
                         </div>
                       ))}

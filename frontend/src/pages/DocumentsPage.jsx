@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { api, getErrorMessage } from '../services/api';
 import PageHeader from '../components/PageHeader';
@@ -15,6 +14,8 @@ import {
   Globe,
   Lock,
 } from 'lucide-react';
+
+const MAX_DOCUMENT_SIZE_BYTES = 4.5 * 1024 * 1024;
 
 function downloadBlobFile(blob, fileName) {
   const objectUrl = window.URL.createObjectURL(blob);
@@ -72,6 +73,11 @@ export default function DocumentsPage() {
 
     if (!file || !form.caseId) {
       setError('Selecione um procedimento e um arquivo.');
+      return;
+    }
+
+    if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+      setError('O arquivo excede o limite de 4,5 MB por arquivo.');
       return;
     }
 
@@ -521,11 +527,33 @@ export default function DocumentsPage() {
                 accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                 required
                 disabled={busy}
-                onChange={(e) =>
-                  setFile(e.target.files?.[0] || null)
-                }
+                onChange={(e) => {
+                  const selectedFile =
+                    e.target.files?.[0] || null;
+
+                  if (
+                    selectedFile &&
+                    selectedFile.size > MAX_DOCUMENT_SIZE_BYTES
+                  ) {
+                    setError(
+                      'O arquivo excede o limite de 4,5 MB por arquivo.'
+                    );
+
+                    e.currentTarget.value = '';
+                    setFile(null);
+                    return;
+                  }
+
+                  setError('');
+                  setFile(selectedFile);
+                }}
               />
             </label>
+
+            <div className="notice-box full-field">
+              <strong>Atenção:</strong> limite de 4,5 MB por arquivo.
+              Formatos aceitos: PDF, JPG e PNG.
+            </div>
 
             {file && (
               <div className="notice-box full-field">

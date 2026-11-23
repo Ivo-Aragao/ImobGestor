@@ -114,6 +114,8 @@ export default function IntegrationsPage() {
     data?.emailConnected ?? data?.email
   );
 
+  const storageConnected = Boolean(data?.storage);
+  
   async function load() {
     try {
       setError('');
@@ -354,15 +356,23 @@ export default function IntegrationsPage() {
 
           {/* VERCEL BLOB - PRÓXIMA ETAPA */}
 
-          <article className="integration-card">
+         <article className="integration-card">
             <div className="integration-card-head">
               <div className="integration-icon">
                 <Cloud size={21} />
               </div>
 
-              <StatusBadge type="planned">
-                Próxima etapa
-              </StatusBadge>
+              {storageConnected ? (
+                <StatusBadge type="success">
+                  <CheckCircle2 size={12} />
+                  Conectado
+                </StatusBadge>
+              ) : (
+                <StatusBadge type="warning">
+                  <AlertCircle size={12} />
+                  Pendente
+                </StatusBadge>
+              )}
             </div>
 
             <h3>Armazenamento privado</h3>
@@ -378,9 +388,18 @@ export default function IntegrationsPage() {
               Armazenamento privado com acesso controlado.
             </small>
 
-            <div className="integration-pending">
-              <Clock3 size={15} />
-              Será implementado na próxima fase.
+            <div className={storageConnected ? 'integration-connected' : 'integration-pending'}>
+              {storageConnected ? (
+                <>
+                  <CheckCircle2 size={15} />
+                  Conexão detectada. Aguardando validação de upload e download.
+                </>
+              ) : (
+                <>
+                  <AlertCircle size={15} />
+                  Conexão ainda não detectada no backend.
+                </>
+              )}
             </div>
           </article>
         </div>
