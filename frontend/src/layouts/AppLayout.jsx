@@ -44,7 +44,9 @@ export default function AppLayout({ session, onLogout, children }) {
     <div className="app-shell">
       {mobileOpen && <button className="mobile-scrim" aria-label="Fechar menu" onClick={() => setMobileOpen(false)} />}
       <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}>
-        <div className="sidebar-brand"><div className="brand-mark">IG</div><div><strong>ImobGestor</strong><small>Gestão imobiliária</small></div><button className="icon-button mobile-close" onClick={() => setMobileOpen(false)} aria-label="Fechar menu"><X size={19} /></button></div>
+        <div className="sidebar-brand"><div className="brand-mark">
+  <img src="/ImobGestor.png" alt="ImobGestor" />
+</div><div><strong>ImobGestor</strong><small>Gestão imobiliária</small></div><button className="icon-button mobile-close" onClick={() => setMobileOpen(false)} aria-label="Fechar menu"><X size={19} /></button></div>
         <div className="office-switcher"><Building2 size={17} /><span>{session?.tenant?.name || 'Meu escritório'}</span></div>
         <nav className="side-nav">
           {items.map(item => { const Icon = item.icon; const showGroup = item.group && item.group !== previousGroup; if (item.group) previousGroup = item.group; return <div key={item.to}>{showGroup && <div className="nav-label">{item.group}</div>}<NavLink to={item.to} end={item.end} onClick={() => setMobileOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><Icon size={18} /><span>{item.label}</span>{item.to==='/notifications'&&unread>0&&<small className="nav-count">{unread>9?'9+':unread}</small>}</NavLink></div>; })}
