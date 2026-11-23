@@ -304,7 +304,9 @@ export default function PortalPage() {
       <div className="portal-screen">
         <header className="portal-header">
           <div className="brand-lockup">
-            <div className="brand-mark">IG</div>
+            <div className="brand-mark">
+            <img src="/imogestoricone.png" alt="ImobGestor" />
+          </div>
 
             <strong>
               ImobGestor
@@ -714,7 +716,9 @@ export default function PortalPage() {
         onSubmit={isActivation ? activate : login}
       >
         <div className="brand-lockup">
-          <div className="brand-mark">IG</div>
+          <div className="brand-mark">
+            <img src="/imogestoricone.png" alt="ImobGestor" />
+          </div>
 
           <strong>
             ImobGestor

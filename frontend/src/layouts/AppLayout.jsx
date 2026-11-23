@@ -45,7 +45,7 @@ export default function AppLayout({ session, onLogout, children }) {
       {mobileOpen && <button className="mobile-scrim" aria-label="Fechar menu" onClick={() => setMobileOpen(false)} />}
       <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand"><div className="brand-mark">
-  <img src="/ImobGestor.png" alt="ImobGestor" />
+  <img src="/imogestoricone.png" alt="ImobGestor" />
 </div><div><strong>ImobGestor</strong><small>Gestão imobiliária</small></div><button className="icon-button mobile-close" onClick={() => setMobileOpen(false)} aria-label="Fechar menu"><X size={19} /></button></div>
         <div className="office-switcher"><Building2 size={17} /><span>{session?.tenant?.name || 'Meu escritório'}</span></div>
         <nav className="side-nav">
