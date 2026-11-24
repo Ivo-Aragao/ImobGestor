@@ -38,7 +38,17 @@ export default function AppLayout({ session, onLogout, children }) {
     if (item.permission && !roleAllowed && permissions[item.permission] !== true) return false;
     return true;
   });
-  const items = session?.user?.isPlatformAdmin ? [...visibleNavigation, { to: '/platform-admin', label: 'Administração SaaS', icon: ShieldCheck, group: 'PLATAFORMA' }] : visibleNavigation;
+  const items = session?.user?.isPlatformAdmin
+  ? [
+      {
+        to: '/platform-admin',
+        label: 'Administração SaaS',
+        icon: ShieldCheck,
+        group: 'PLATAFORMA',
+      },
+      ...visibleNavigation,
+    ]
+  : visibleNavigation;
   let previousGroup = '';
   return (
     <div className="app-shell">
