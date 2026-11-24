@@ -61,6 +61,216 @@ router.patch('/tenants/:tenantId/status', asyncHandler(async (req, res) => {
   const item = await prisma.tenant.update({ where: { id: tenantId }, data: { status } });
   res.json(item);
 }));
+
+
+// ==========================================
+// CONFIGURAÇÃO DE E-MAIL DA PLATAFORMA
+// ==========================================
+
+
+
+
+const PLATFORM_SENDER_EMAIL = (
+  process.env.PLATFORM_SENDER_EMAIL || ''
+).trim().toLowerCase();
+
+// CONSULTAR CONEXÃO E REMETENTE DO GMAIL
+router.get('/email-settings', asyncHandler(async (_req, res) => {
+  const credential = await prisma.integrationCredential.findUnique({
+    where: { provider: 'GOOGLE_GMAIL' },
+    select: {
+      accountEmail: true,
+      connectedAt: true,
+    },
+  });
+
+  const senderEmail = credential?.accountEmail?.trim().toLowerCase() || null;
+
+  res.json({
+    gmailConnected: Boolean(credential),
+    senderEmail,
+    expectedSenderEmail: PLATFORM_SENDER_EMAIL || null,
+    senderMatches: Boolean(
+      senderEmail &&
+      PLATFORM_SENDER_EMAIL &&
+      senderEmail === PLATFORM_SENDER_EMAIL
+    ),
+    connectedAt: credential?.connectedAt || null,
+  });
+}));
+
+// ALTERAR O E-MAIL QUE RECEBERÁ AS NOTIFICAÇÕES DA EMPRESA
+router.patch('/tenants/:tenantId/email', asyncHandler(async (req, res) => {
+  const tenantId = z.string().min(1).parse(req.params.tenantId);
+
+  const input = z.object({
+    email: z.union([
+      z.string().trim().email().max(254),
+      z.literal(''),
+    ]).transform(value => value || null),
+  }).parse(req.body);
+
+  const item = await prisma.tenant.update({
+    where: { id: tenantId },
+    data: { email: input.email },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  });
+
+  res.json(item);
+}));
+
+// ENVIAR UM E-MAIL DE TESTE PARA UMA EMPRESA
+router.post('/tenants/:tenantId/test-email', asyncHandler(async (req, res) => {
+  const tenantId = z.string().min(1).parse(req.params.tenantId);
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  });
+
+  if (!tenant) {
+    throw new AppError(404, 'Empresa não encontrada.');
+  }
+
+  if (!tenant.email) {
+    throw new AppError(400, 'Cadastre o e-mail de destino da empresa.');
+  }
+
+  if (!PLATFORM_SENDER_EMAIL) {
+    throw new AppError(409, 'Remetente oficial não configurado.');
+  }
+
+  const credential = await prisma.integrationCredential.findUnique({
+    where: { provider: 'GOOGLE_GMAIL' },
+    select: { accountEmail: true },
+  });
+
+  if (!credential) {
+    throw new AppError(409, 'Gmail não conectado.');
+  }
+
+  if (
+    credential.accountEmail.trim().toLowerCase() !== PLATFORM_SENDER_EMAIL
+  ) {
+    throw new AppError(409, 'A conta Gmail conectada não corresponde ao remetente oficial.');
+  }
+
+  const result = await sendEmail({
+    to: tenant.email,
+    subject: 'Teste de envio — ImobGestor',
+    text: `Olá! Este é um teste de envio do ImobGestor para ${tenant.name}.`,
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#26352d">
+        <h2>Teste de envio — ImobGestor</h2>
+        <p>Olá!</p>
+        <p>Este é um teste de envio para <strong>${escapeHtml(tenant.name)}</strong>.</p>
+        <p>O sistema de e-mails está funcionando.</p>
+        <p>Atenciosamente,<br>Equipe ImobGestor</p>
+      </div>
+    `,
+  });
+
+  if (!result.sent) {
+    throw new AppError(503, 'O Gmail não confirmou o envio.');
+  }
+
+  res.json({
+    sent: true,
+    to: tenant.email,
+    sender: credential.accountEmail,
+  });
+}));
+
+// LISTAR USUÁRIOS DE TODA A PLATAFORMA
+router.get('/users', asyncHandler(async (req, res) => {
+  const q = String(req.query.q || '').trim();
+
+  const items = await prisma.user.findMany({
+    where: q
+      ? {
+          OR: [
+            { name: { contains: q, mode: 'insensitive' } },
+            { email: { contains: q, mode: 'insensitive' } },
+          ],
+        }
+      : {},
+    orderBy: { createdAt: 'desc' },
+    take: 300,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      status: true,
+      createdAt: true,
+      memberships: {
+        select: {
+          role: true,
+          isActive: true,
+          tenant: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  res.json({ items });
+}));
+
+// ATIVAR OU DESATIVAR USUÁRIO
+router.patch('/users/:userId/status', asyncHandler(async (req, res) => {
+  const userId = z.string().min(1).parse(req.params.userId);
+
+  const { status } = z.object({
+    status: z.enum(['ACTIVE', 'INACTIVE']),
+  }).parse(req.body);
+
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true },
+  });
+
+  if (!target) {
+    throw new AppError(404, 'Usuário não encontrado.');
+  }
+
+  if (
+    status === 'INACTIVE' &&
+    allowedAdmins.has(target.email.toLowerCase())
+  ) {
+    throw new AppError(
+      403,
+      'Não é permitido desativar uma conta de administrador da plataforma.'
+    );
+  }
+
+  const item = await prisma.user.update({
+    where: { id: userId },
+    data: { status },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      status: true,
+    },
+  });
+
+  res.json(item);
+}));
+
+
 router.get('/plans', asyncHandler(async (_req, res) => {
   const items = await prisma.plan.findMany({ orderBy: { monthlyPrice: 'asc' }, include: { _count: { select: { subscriptions: true } } } });
   res.json({ items });

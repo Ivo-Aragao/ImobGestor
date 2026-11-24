@@ -129,6 +129,21 @@ export async function sendEmail({ to, subject, html, text }) {
   }
 
   try {
+  const expectedSender = (
+  process.env.PLATFORM_SENDER_EMAIL || ''
+).trim().toLowerCase();
+
+if (!expectedSender) {
+  throw new Error('Remetente oficial não configurado.');
+}
+
+if (
+  credential.accountEmail.trim().toLowerCase() !== expectedSender
+) {
+  throw new Error(
+    `O Gmail conectado deve ser ${expectedSender}.`
+  );
+}
     const refreshToken = decryptSecret(credential.encryptedRefreshToken);
     const oauth = createOAuthClient();
 

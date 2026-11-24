@@ -198,12 +198,12 @@ router.get('/daily', async (req, res, next) => {
 
     // Tarefas e compromissos com destinatário de e-mail
     const tasksWithEmail = tasks.filter(
-      (task) => Boolean(task.assignedTo?.email?.trim())
-    );
+  task => Boolean(task.tenant?.email?.trim())
+);
 
-    const eventsWithEmail = events.filter(
-      (event) => Boolean(event.assignedTo?.email?.trim())
-    );
+const eventsWithEmail = events.filter(
+  event => Boolean(event.tenant?.email?.trim())
+);
 
     // Identifica os escritórios que possuem alertas
     const tenantsWithAlerts = new Set([
@@ -303,7 +303,7 @@ router.get('/daily', async (req, res, next) => {
         },
       });
 
-      const taskEmail = task.assignedTo?.email?.trim();
+      const taskEmail = task.tenant?.email?.trim();
 
       if (taskEmail) {
         await safeSendEmail(
@@ -366,7 +366,7 @@ router.get('/daily', async (req, res, next) => {
         },
       });
 
-      const eventEmail = event.assignedTo?.email?.trim();
+      const eventEmail = event.tenant?.email?.trim();
 
       if (eventEmail) {
         await safeSendEmail(

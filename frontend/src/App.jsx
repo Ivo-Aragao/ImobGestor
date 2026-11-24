@@ -72,7 +72,14 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/audit" element={<AuditPage />} />
             <Route path="/portal-requests" element={<PortalRequestsPage />} />
-            <Route path="/platform-admin" element={<AdminPage />} />
+            <Route
+  path="/platform-admin"
+  element={
+    session?.user?.isPlatformAdmin
+      ? <AdminPage />
+      : <Navigate to="/" replace />
+  }
+/>
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
