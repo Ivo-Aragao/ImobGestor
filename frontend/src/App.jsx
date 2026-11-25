@@ -69,7 +69,10 @@ export default function App() {
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/automations" element={<AutomationsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/settings"
+              element={<SettingsPage onProfileUpdated={refreshSession} />}
+            />
             <Route path="/audit" element={<AuditPage />} />
             <Route path="/portal-requests" element={<PortalRequestsPage />} />
             <Route

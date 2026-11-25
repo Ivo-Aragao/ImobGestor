@@ -312,6 +312,55 @@ router.patch('/settings/tenant', requirePermission(adminRoles, 'settings.manage'
   res.json(item);
 }));
 
+
+// USER PROFILE — alteração do nome do usuário autenticado.
+router.get('/settings/profile', asyncHandler(async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.auth.userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(404, 'Usuário não encontrado.');
+  }
+
+  res.json(user);
+}));
+
+router.patch('/settings/profile', asyncHandler(async (req, res) => {
+  const input = z.object({
+    name: z.string()
+      .trim()
+      .min(2, 'Informe pelo menos 2 caracteres.')
+      .max(120),
+  }).parse(req.body);
+
+  const user = await prisma.user.update({
+    where: { id: req.auth.userId },
+    data: { name: input.name },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  });
+
+  await writeAudit(
+    req,
+    'USER_PROFILE_UPDATED',
+    'User',
+    user.id,
+    { changedFields: ['name'] }
+  );
+
+  res.json(user);
+}));
+
+
 // TENANT AUDIT TRAIL
 router.get('/audit', requirePermission(adminRoles, 'audit.read'), asyncHandler(async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
