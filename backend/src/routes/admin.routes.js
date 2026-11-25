@@ -36,10 +36,21 @@ router.post('/tenants', asyncHandler(async (req, res) => {
   if (!plan) throw new AppError(404, 'Plano ativo não encontrado.');
   const rawToken = randomBytes(32).toString('hex');
   const tokenHash = createHash('sha256').update(rawToken).digest('hex');
-  const trialEnd = new Date(Date.now() + 14 * 86400000);
+  const isFreePlan = Number(plan.monthlyPrice) === 0;
+const trialEnd = isFreePlan
+  ? null
+  : new Date(Date.now() + 14 * 86400000);
   const tenant = await prisma.$transaction(async tx => {
     const created = await tx.tenant.create({ data: { name: input.name, legalName: input.legalName, document: input.document, email: input.email, phone: input.phone } });
-    await tx.subscription.create({ data: { tenantId: created.id, planId: plan.id, status: 'TRIAL', trialEndsAt: trialEnd, currentPeriodEnd: trialEnd } });
+    await tx.subscription.create({
+  data: {
+    tenantId: created.id,
+    planId: plan.id,
+    status: isFreePlan ? 'ACTIVE' : 'TRIAL',
+    trialEndsAt: trialEnd,
+    currentPeriodEnd: trialEnd,
+  },
+});
     await tx.teamInvite.create({ data: { tenantId: created.id, email: input.ownerEmail, name: input.ownerName, role: 'OWNER', tokenHash, expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000) } });
     return created;
   });
